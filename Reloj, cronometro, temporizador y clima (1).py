@@ -3,6 +3,7 @@ import tkinter as tk
 from tkinter import ttk
 import time
 import requests
+from tkinter import messagebox
 
 # --------------------- Configuración inicial ---------------------
 ventana = tk.Tk()
@@ -19,20 +20,27 @@ fuente_mensaje = ('Helvetica', 20)
 
 # -------------------- Variables globales -------------------------
 cronometro_tiempo = 0.0
-temporizador_tiempo = 0
-cronometro_stop = None
+hora = 0
+minutos = 0
+segundos = 0
 temporizador_stop = None
+cronometro_stop = None
+
 
 # ---------------------- Pestañas ---------------------------------
 pestania = ttk.Notebook(ventana)
 pestania.pack(expand=True, fill=tk.BOTH)
 
+menu_opciones  = tk.Menu(ventana,title='Opciones',tearoff=0)
+ventana.config(menu=menu_opciones)
 # ------------------ Pestaña: Fecha y hora ------------------------
 frame_hora = tk.Frame(pestania, bg='lightblue')
+
 reloj = tk.Label(frame_hora, font=fuente_hora, fg='white', bg="lightblue")
 fecha = tk.Label(frame_hora, font=fuente_fecha, fg='white', bg="lightblue")
 reloj.pack(pady=20)
 fecha.pack()
+
 
 def actualizar_reloj():
     tiempo_actual = time.strftime('%H:%M:%S')
@@ -45,6 +53,8 @@ actualizar_reloj()
 pestania.add(frame_hora, text='Reloj')
 
 # ------------------- Pestaña: Cronómetro -------------------------
+
+
 frame_crono = tk.Frame(pestania, bg='lightblue')
 cronometro_label = tk.Label(frame_crono, text='0.0', font=fuente_hora, bg='lightblue', fg='white')
 cronometro_label.pack(pady=20)
@@ -81,35 +91,98 @@ boton_crono_reiniciar.pack(side='left', padx=20)
 pestania.add(frame_crono, text='Cronómetro')
 
 # ------------------ Pestaña: Temporizador ------------------------
-frame_timer = tk.Frame(pestania, bg='lightblue')
+frame_timer = tk.Frame(pestania,bg='DeepSkyBlue3')
 
-entrada_tiempo = tk.Entry(frame_timer, font=fuente_mensaje, justify='center')
-entrada_tiempo.pack(pady=10)
+#----------------------------Funciones------------------------------------
+def confirmar():
+    if combobox.get() == 'Seleccione la hora' or combobox_minutos.get() == 'Seleccione los minutos' or combobox_segundos.get() == 'Seleccione los segundos' : 
+        messagebox.showwarning('Advertencia','Seleccione todos los valores del cronometro')
+    else: 
+        combobox.config(state='disabled')
+        combobox_minutos.config(state='disabled')
+        combobox_segundos.config(state='disabled')
+        boton_timer_cancelar.config(state='active')
+        boton_timer_iniciar.grid(row=4,pady=10)
+        boton_timer_pausar.grid(column=1,row=4 ,pady=10)
+        boton_timer_reiniciar.grid(column=2,row=4,pady=10)
+        boton_timer_cancelar.grid(column=2,row=3)
+        boton_timer_iniciar.config(state='active')
+        
+        temporizador_label.config(text=f'{hora}:{minutos}:{segundos}')
 
-temporizador_label = tk.Label(frame_timer, text='0', font=fuente_hora, bg='lightblue', fg='white')
-temporizador_label.pack(pady=20)
+def cancelar():
+    combobox.config(state='readonly')
+    combobox_minutos.config(state='readonly')
+    combobox_segundos.config(state='readonly')
+    combobox.set('Seleccione la hora')
+    combobox_minutos.set('Seleccione los minutos')
+    combobox_segundos.set('Seleccione los segundos')
 
-def confirmar_temporizador():
-    global temporizador_tiempo
-    try:
-        temporizador_tiempo = int(entrada_tiempo.get())
-        temporizador_label.config(text=str(temporizador_tiempo))
-        entrada_tiempo.config(state='disabled')
-        boton_timer_iniciar.config(state='normal')
-    except ValueError:
-        temporizador_label.config(text='Inválido')
+
+
+def seleccion_hora(event):
+    global hora
+    elemento_seleccionado = combobox.get()
+    hora = int(elemento_seleccionado)
+    
+def seleccion_minutos(event):
+    global minutos
+    elemento_seleccionado = combobox_minutos.get()
+    minutos = int(elemento_seleccionado)
+
+    
+def seleccion_segundos(event):
+    global segundos
+    elemento_seleccionado = combobox_segundos.get()
+    segundos=int(elemento_seleccionado)
+
+              
 
 def iniciar_temporizador():
-    global temporizador_tiempo, temporizador_stop
-    if temporizador_tiempo > 0:
-        temporizador_tiempo -= 1
-        temporizador_label.config(text=str(temporizador_tiempo))
+    global hora,minutos,segundos,temporizador_stop
+    if segundos > 0:
+        segundos = int(segundos)
+        segundos -= 1
+        temporizador_label.config(text=f'{hora}:{minutos}:{segundos}')
         boton_timer_iniciar.config(state='disabled')
         boton_timer_pausar.config(state='normal')
         boton_timer_reiniciar.config(state='normal')
         temporizador_stop = ventana.after(1000, iniciar_temporizador)
+        if segundos == 0 and int(minutos)>0 :
+            minutos = int(minutos)
+            minutos -= 1
+            segundos = 59
+            temporizador_label.config(text=f'{hora}:{minutos}:{segundos}')
+        if minutos == 0 and int(hora)>0:
+            hora = int(hora)
+            hora -= 1
+            minutos = 59
+            temporizador_label.config(text=f'{hora}:{minutos}:{segundos}')
+    elif minutos > 0 and segundos == 0 and hora==0:
+        minutos -= 1
+        segundos = 59
+        temporizador_label.config(text=f'{hora}:{minutos}:{segundos}')
+        temporizador_stop = ventana.after(1000, iniciar_temporizador)
+    elif hora > 0 and minutos==0 and segundos==0:
+        hora = int(hora)
+        hora -= 1
+        minutos = 59
+        segundos = 59
+        temporizador_label.config(text=f'{hora}:{minutos}:{segundos}')
+        temporizador_stop = ventana.after(1000, iniciar_temporizador)
+
     else:
-        temporizador_label.config(text="¡Tiempo!")
+        messagebox.showinfo('Notificacion','¡Tiempo!')
+        combobox.set('Seleccione la hora')
+        combobox_minutos.set('Seleccione los minutos')
+        combobox_segundos.set('Seleccione los segundos')
+        boton_timer_pausar.config(state='disabled')
+        boton_timer_reiniciar.config(state='disabled')
+        boton_timer_cancelar.config(state='disabled')
+        combobox.config(state='readonly')
+        combobox_minutos.config(state='readonly')
+        combobox_segundos.config(state='readonly')
+       
 
 def pausar_temporizador():
     global temporizador_stop
@@ -118,26 +191,105 @@ def pausar_temporizador():
         boton_timer_iniciar.config(state='normal')
 
 def reiniciar_temporizador():
-    global temporizador_tiempo, temporizador_stop
+    global hora,minutos,segundos, temporizador_stop
     if temporizador_stop:
         ventana.after_cancel(temporizador_stop)
-    temporizador_tiempo = 0
-    temporizador_label.config(text='0')
-    entrada_tiempo.config(state='normal')
+    hora = 0
+    minutos = 0
+    segundos = 0
+    temporizador_label.config(text=f'{hora}:{minutos}:{segundos}')
     boton_timer_iniciar.config(state='disabled')
     boton_timer_pausar.config(state='disabled')
     boton_timer_reiniciar.config(state='disabled')
+    combobox.config(state='readonly')
+    combobox_minutos.config(state='readonly')
+    combobox_segundos.config(state='readonly')
+    combobox.set('Seleccione la hora')
+    combobox_minutos.set('Seleccione los minutos')
+    combobox_segundos.set('Seleccione los segundos')
 
-boton_timer_confirmar = tk.Button(frame_timer, text='Confirmar', command=confirmar_temporizador, font=fuente_mensaje)
-boton_timer_iniciar = tk.Button(frame_timer, text='Iniciar', command=iniciar_temporizador, font=fuente_mensaje, state='disabled')
-boton_timer_pausar = tk.Button(frame_timer, text='Pausar', command=pausar_temporizador, font=fuente_mensaje, state='disabled')
-boton_timer_reiniciar = tk.Button(frame_timer, text='Reiniciar', command=reiniciar_temporizador, font=fuente_mensaje, state='disabled')
+#-------------------------  horas del cronometro ----------------------------------------
+frame_horas = tk.Frame(frame_timer,bg='DeepSkyBlue3')
 
-boton_timer_confirmar.pack()
-boton_timer_iniciar.pack(side='left', padx=10)
-boton_timer_pausar.pack(side='left', padx=10)
-boton_timer_reiniciar.pack(side='left', padx=10)
 
+label_horas = tk.Label(frame_horas,text='Horas',bg='DeepSkyBlue3')
+
+combobox = ttk.Combobox(frame_horas,font=('arial',8),foreground='gray',state='normal',width=20,height=10)
+combobox.set('Seleccione la hora')
+combobox.config(state='readonly')
+
+elementos = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23]
+combobox['values']=elementos
+
+combobox.bind('<<ComboboxSelected>>', seleccion_hora)
+
+label_horas.grid()
+combobox.grid()
+frame_horas.grid(column=0,row=0)
+#------------------------------------ minutos del cronometro-------------------------------------------
+frame_minutos = tk.Frame(frame_timer,bg='DeepSkyBlue3')
+
+label_minutos = tk.Label(frame_minutos,text='Minutos',bg='DeepSkyBlue3')
+
+combobox_minutos = ttk.Combobox(frame_minutos,font=('arial',8),foreground='gray',state='normal')
+combobox_minutos.config(state='readonly')
+combobox_minutos.set('Seleccione los minutos')
+
+elementos_minutos = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59]
+combobox_minutos['values']=elementos_minutos
+
+
+
+combobox_minutos.bind('<<ComboboxSelected>>', seleccion_minutos)
+
+label_minutos.grid()
+
+combobox_minutos.grid()
+frame_minutos.grid(column=1,row=0)
+#------------------------------------------ segundos del cronometro---------------------------------------
+frame_segundos = tk.Frame(frame_timer,bg='DeepSkyBlue3')
+
+label_segundos = tk.Label(frame_segundos,text='Segundos',bg='DeepSkyBlue3')
+
+combobox_segundos = ttk.Combobox(frame_segundos,font=('arial',8),foreground='gray',background='white',state='normal')
+combobox_segundos.config(state='readonly')
+combobox_segundos.set('Seleccione los segundos')
+elementos_segundos = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59]
+combobox_segundos['values']=elementos_segundos
+
+
+
+combobox_segundos.bind('<<ComboboxSelected>>', seleccion_segundos)
+
+label_segundos.grid()
+
+combobox_segundos.grid()
+
+frame_segundos.grid(column=2,row=0)
+
+#------------------------------------------ label del timer---------------------------------------------------------
+
+temporizador_label = tk.Label(frame_timer, text=f'{hora}:{minutos}:{segundos}', font=('Cambria Math',12), bg='DeepSkyBlue3', fg='red')
+
+
+
+#----------------------Botones------------------------------------------------------------------
+
+boton_timer_confirmar = tk.Button(frame_timer, text='Confirmar', command=confirmar,font=('arial',11),bg='SeaGreen2')
+boton_timer_iniciar = tk.Button(frame_timer, text='Iniciar',command=iniciar_temporizador,bg='SeaGreen2',width=10)
+boton_timer_pausar = tk.Button(frame_timer, text='Pausar',command=pausar_temporizador,bg='SeaGreen2',width=10)
+boton_timer_reiniciar = tk.Button(frame_timer, text='Reiniciar',command=reiniciar_temporizador,bg='SeaGreen2',width=10)
+boton_timer_cancelar  = tk.Button(frame_timer,text='cancelar',command=cancelar,bg='SeaGreen2',width=10)
+
+
+#----------------------------------------------------Empaquetado
+temporizador_label.grid(column=1,row=2)
+boton_timer_confirmar.grid(column=1,row=3)
+boton_timer_iniciar.grid_forget()
+boton_timer_pausar.grid_forget()
+boton_timer_reiniciar.grid_forget()
+boton_timer_cancelar.grid_forget()
+frame_timer.grid_anchor(tk.N)
 pestania.add(frame_timer, text='Temporizador')
 
 # --------------------- Pestaña: Clima ---------------------------
@@ -169,8 +321,6 @@ pestania.add(frame_clima, text='Clima')
 
 # -------------------- Ejecutar interfaz -------------------------
 ventana.mainloop()
-
-
 
 
 
